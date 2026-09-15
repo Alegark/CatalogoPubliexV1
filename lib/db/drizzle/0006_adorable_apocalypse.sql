@@ -1,0 +1,1 @@
+ALTER TABLE "products" ADD COLUMN "keywords" text[] DEFAULT '{}' NOT NULL;

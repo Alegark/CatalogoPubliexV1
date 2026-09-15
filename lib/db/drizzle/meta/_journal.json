@@ -1,0 +1,76 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1784939424160,
+      "tag": "0000_familiar_hawkeye",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785292879868,
+      "tag": "0001_add_categories",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785293414418,
+      "tag": "0002_add_categories_final",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785298065071,
+      "tag": "0003_add_banners",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785301019563,
+      "tag": "0004_huge_scarlet_witch",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1785355308028,
+      "tag": "0005_lumpy_risque",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785378892412,
+      "tag": "0006_adorable_apocalypse",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785866637159,
+      "tag": "0007_fair_krista_starr",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785960346072,
+      "tag": "0008_green_secret_warriors",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785960379227,
+      "tag": "0009_dizzy_star_brand",
+      "breakpoints": true
+    }
+  ]
+}

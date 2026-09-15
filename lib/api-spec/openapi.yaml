@@ -1,0 +1,1276 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification for Catálogo Publiex Maracaibo
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: products
+    description: Product catalog operations
+  - name: categories
+    description: Category operations
+  - name: banners
+    description: Catalog banner operations
+  - name: exchange-rate
+    description: Exchange rate operations
+  - name: auth
+    description: Administrative authentication
+  - name: analytics
+    description: Aggregate traffic and commerce analytics
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /products:
+    get:
+      operationId: listProducts
+      tags: [products]
+      summary: List all products
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Search by name
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by category
+        - name: slug
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Match one exact product slug
+      responses:
+        "200":
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+    post:
+      operationId: createProduct
+      tags: [products]
+      summary: Create a product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+
+  /product-keywords:
+    get:
+      operationId: listProductKeywords
+      tags: [products]
+      summary: List reusable product keywords
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 60
+          description: Filter keywords by text
+      responses:
+        "200":
+          description: Reusable product keywords
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  minLength: 1
+                  maxLength: 60
+        "401":
+          description: Authentication required
+    delete:
+      operationId: deleteProductKeyword
+      tags: [products]
+      summary: Remove a reusable product keyword
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [keyword]
+              properties:
+                keyword:
+                  type: string
+                  minLength: 1
+                  maxLength: 60
+      responses:
+        "204":
+          description: Keyword removed from all products
+        "400":
+          description: Invalid keyword
+        "401":
+          description: Authentication required
+
+  /products/{id}:
+    get:
+      operationId: getProduct
+      tags: [products]
+      summary: Get a product by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Product detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateProduct
+      tags: [products]
+      summary: Update a product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdate"
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteProduct
+      tags: [products]
+      summary: Delete a product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /uploads:
+    post:
+      operationId: uploadProductImages
+      tags: [products]
+      summary: Upload product images
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [images]
+              properties:
+                images:
+                  type: array
+                  maxItems: 10
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        "201":
+          description: Uploaded images
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadImagesResponse"
+        "400":
+          description: Invalid images
+        "401":
+          description: Authentication required
+
+  /uploads/sign:
+    post:
+      operationId: createSignedUpload
+      tags: [products]
+      summary: Create a signed Storage upload
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadSignInput"
+      responses:
+        "200":
+          description: Signed upload or local development fallback
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadSignResponse"
+        "400":
+          description: Invalid image metadata
+        "401":
+          description: Authentication required
+
+  /uploads/complete:
+    post:
+      operationId: completeSignedUpload
+      tags: [products]
+      summary: Verify a completed Storage upload
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadCompleteInput"
+      responses:
+        "200":
+          description: Verified image
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadImagesResponseImagesItem"
+        "400":
+          description: Invalid or missing image
+        "401":
+          description: Authentication required
+
+  /banners:
+    get:
+      operationId: listBanners
+      tags: [banners]
+      summary: List active catalog banners
+      responses:
+        "200":
+          description: Ordered catalog banners
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Banner"
+    post:
+      operationId: uploadBanners
+      tags: [banners]
+      summary: Upload catalog banners
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [images]
+              properties:
+                images:
+                  type: array
+                  minItems: 1
+                  maxItems: 10
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        "201":
+          description: Banners uploaded
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Banner"
+        "400":
+          description: Invalid images
+        "401":
+          description: Authentication required
+        "413":
+          description: Upload too large
+
+  /banners/from-storage:
+    post:
+      operationId: createBannersFromStorage
+      tags: [banners]
+      summary: Register verified banner uploads
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StorageBannersInput"
+      responses:
+        "201":
+          description: Registered banners
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Banner"
+        "400":
+          description: Invalid uploads
+        "401":
+          description: Authentication required
+
+  /banners/order:
+    patch:
+      operationId: reorderBanners
+      tags: [banners]
+      summary: Reorder catalog banners
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BannerOrder"
+      responses:
+        "200":
+          description: Updated banner order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Banner"
+        "400":
+          description: Invalid order
+        "401":
+          description: Authentication required
+
+  /banners/{id}:
+    patch:
+      operationId: updateBannerLink
+      tags: [banners]
+      summary: Link a banner to a promotional product
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBannerBody"
+      responses:
+        "200":
+          description: Banner with updated link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Banner"
+        "400":
+          description: Invalid or non-promotional product
+        "401":
+          description: Authentication required
+        "404":
+          description: Banner not found
+    delete:
+      operationId: deleteBanner
+      tags: [banners]
+      summary: Delete a catalog banner
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "204":
+          description: Banner deleted
+        "400":
+          description: Invalid banner id
+        "401":
+          description: Authentication required
+        "404":
+          description: Banner not found
+
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List all product categories
+      responses:
+        "200":
+          description: List of reusable categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+    post:
+      operationId: createCategory
+      tags: [categories]
+      summary: Create a product category
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "201":
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          description: Invalid category
+        "401":
+          description: Authentication required
+        "409":
+          description: Category already exists
+
+  /categories/{id}:
+    delete:
+      operationId: deleteCategory
+      tags: [categories]
+      summary: Delete a product category and optionally reassign its products
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteCategoryBody"
+      responses:
+        "200":
+          description: Category deleted and products reassigned when necessary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteCategoryResponse"
+        "400":
+          description: Invalid replacement category
+        "401":
+          description: Authentication required
+        "404":
+          description: Category not found
+
+  /products/stats:
+    get:
+      operationId: getProductStats
+      tags: [products]
+      summary: Get product stats (count per category and total)
+      responses:
+        "200":
+          description: Product statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductStats"
+
+  /analytics/events:
+    post:
+      operationId: recordAnalyticsEvent
+      tags: [analytics]
+      summary: Record an anonymous commerce event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyticsEventInput"
+      responses:
+        "202":
+          description: Event accepted
+        "400":
+          description: Invalid event
+        "429":
+          description: Too many events
+
+  /analytics/overview:
+    get:
+      operationId: getAnalyticsOverview
+      tags: [analytics]
+      summary: Get the administrative analytics overview
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}-\d{2}$'
+      responses:
+        "200":
+          description: Analytics overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsOverview"
+        "400":
+          description: Invalid date range
+        "401":
+          description: Authentication required
+
+  /exchange-rate:
+    get:
+      operationId: getExchangeRate
+      tags: [exchange-rate]
+      summary: Get current USD to Bs exchange rate
+      responses:
+        "200":
+          description: Current exchange rate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExchangeRate"
+    put:
+      operationId: updateExchangeRate
+      tags: [exchange-rate]
+      summary: Update the exchange rate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExchangeRateInput"
+      responses:
+        "200":
+          description: Updated exchange rate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExchangeRate"
+
+  /auth/session:
+    get:
+      operationId: getAdminSession
+      tags: [auth]
+      summary: Get current administrative session
+      responses:
+        "200":
+          description: Current authentication state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+
+  /auth/login:
+    post:
+      operationId: adminLogin
+      tags: [auth]
+      summary: Start an administrative session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginInput"
+      responses:
+        "200":
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+        "401":
+          description: Invalid credentials
+        "429":
+          description: Too many attempts
+        "503":
+          description: Authentication is not configured
+
+  /auth/logout:
+    post:
+      operationId: adminLogout
+      tags: [auth]
+      summary: End the administrative session
+      responses:
+        "204":
+          description: Session ended
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ProductSize:
+      type: object
+      required: [name, price]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+          description: Size name (e.g. "Media carta", "Carta", "Oficio")
+        price:
+          type: number
+          minimum: 0
+          maximum: 1000000
+          description: Price in USD for this size
+        measurements:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: Product measurements in centimeters (e.g. "30 × 40 × 15 cm")
+        acrylicThicknessCm:
+          type: number
+          minimum: 0
+          maximum: 100
+          multipleOf: 0.01
+          description: Acrylic thickness in centimeters
+        acrylicColor:
+          type: string
+          minLength: 1
+          maxLength: 60
+          description: Acrylic color
+
+    DiscountTier:
+      type: object
+      required: [threshold, amountOffUsd]
+      properties:
+        threshold:
+          type: integer
+          minimum: 1
+          description: Minimum quantity for this discount tier
+        amountOffUsd:
+          type: number
+          minimum: 0
+          maximum: 1000000
+          multipleOf: 0.01
+          description: Fixed discount in USD applied to each unit at this level
+
+    Product:
+      type: object
+      required: [id, name, slug, category, images, keywords, basePrice, deliveryTime, stockQuantity, sizes, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: ["string", "null"]
+        keywords:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 60
+          description: Search terms associated with the product
+        category:
+          type: string
+        images:
+          type: array
+          items:
+            type: string
+          description: Array of image URLs
+        basePrice:
+          type: number
+          description: Base price in USD (lowest size or default)
+        deliveryTime:
+          type: string
+          description: Estimated delivery time (e.g. "3-5 días hábiles")
+        stockQuantity:
+          type: integer
+          minimum: 0
+          description: Units currently available. Zero means made to order.
+        sizes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductSize"
+          description: Available sizes with individual prices
+        discountTiers:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiscountTier"
+          description: Bulk discount levels ordered by minimum quantity
+        discountThreshold:
+          type: ["integer", "null"]
+          description: Minimum quantity to trigger bulk discount (null = no discount)
+        discountPercent:
+          type: ["number", "null"]
+          description: Legacy percentage discount field; new offers use amountOffUsd
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Category:
+      type: object
+      required: [id, name, slug, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 160
+        createdAt:
+          type: string
+          format: date-time
+
+    CategoryInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+
+    DeleteCategoryBody:
+      type: object
+      required: [replacementCategoryId]
+      properties:
+        replacementCategoryId:
+          type: integer
+          minimum: 1
+          nullable: true
+          description: Existing category that will receive products from the deleted category
+
+    DeleteCategoryResponse:
+      type: object
+      required: [deletedCategoryId, replacementCategoryId, movedProductCount]
+      properties:
+        deletedCategoryId:
+          type: integer
+        replacementCategoryId:
+          type: integer
+          nullable: true
+        movedProductCount:
+          type: integer
+          minimum: 0
+
+    Banner:
+      type: object
+      required: [id, url, position, createdAt, productId, productName, link]
+      properties:
+        id:
+          type: integer
+        url:
+          type: string
+        position:
+          type: integer
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        productId:
+          type: integer
+          nullable: true
+        productName:
+          type: string
+          nullable: true
+        link:
+          type: string
+          nullable: true
+
+    UpdateBannerBody:
+      type: object
+      required: [productId]
+      properties:
+        productId:
+          type: integer
+          minimum: 1
+          nullable: true
+
+    BannerOrder:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            type: integer
+            minimum: 1
+
+    ProductInput:
+      type: object
+      required: [name, slug, category, images, basePrice, deliveryTime, stockQuantity, sizes]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+          maxLength: 4000
+        keywords:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 60
+          description: Search terms associated with the product
+        category:
+          type: string
+          minLength: 1
+          maxLength: 80
+        images:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+        basePrice:
+          type: number
+          minimum: 0
+          maximum: 1000000
+        deliveryTime:
+          type: string
+          minLength: 1
+          maxLength: 120
+        stockQuantity:
+          type: integer
+          minimum: 0
+          description: Units currently available. Zero means made to order.
+        sizes:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/ProductSize"
+        discountTiers:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiscountTier"
+          description: Bulk discount levels ordered by minimum quantity
+        discountThreshold:
+          type: integer
+        discountPercent:
+          type: number
+          multipleOf: 0.01
+
+    ProductUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 160
+        description:
+          type: string
+          maxLength: 4000
+        keywords:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            minLength: 1
+            maxLength: 60
+          description: Search terms associated with the product
+        category:
+          type: string
+          minLength: 1
+          maxLength: 80
+        images:
+          type: array
+          maxItems: 10
+          items:
+            type: string
+        basePrice:
+          type: number
+          minimum: 0
+          maximum: 1000000
+        deliveryTime:
+          type: string
+          minLength: 1
+          maxLength: 120
+        stockQuantity:
+          type: integer
+          minimum: 0
+          description: Units currently available. Zero means made to order.
+        sizes:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/ProductSize"
+        discountTiers:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiscountTier"
+          description: Bulk discount levels ordered by minimum quantity
+        discountThreshold:
+          type: ["integer", "null"]
+        discountPercent:
+          type: ["number", "null"]
+          multipleOf: 0.01
+
+    UploadImagesResponse:
+      type: object
+      required: [images]
+      properties:
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/UploadImagesResponseImagesItem"
+
+    UploadImagesResponseImagesItem:
+      type: object
+      required: [name, url]
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+
+    UploadSignInput:
+      type: object
+      required: [kind, name, contentType, size]
+      properties:
+        kind:
+          type: string
+          enum: [product, banner]
+        name:
+          type: string
+          maxLength: 255
+        contentType:
+          type: string
+          enum: [image/avif, image/gif, image/jpeg, image/png, image/webp]
+        size:
+          type: integer
+          minimum: 1
+          maximum: 5242880
+
+    UploadSignResponse:
+      oneOf:
+        - type: object
+          required: [mode, kind, bucket, storagePath, uploadUrl, publicUrl]
+          properties:
+            mode:
+              type: string
+              enum: [signed]
+            kind:
+              type: string
+              enum: [product, banner]
+            bucket:
+              type: string
+            storagePath:
+              type: string
+            uploadUrl:
+              type: string
+            publicUrl:
+              type: string
+        - type: object
+          required: [mode]
+          properties:
+            mode:
+              type: string
+              enum: [legacy]
+
+    UploadCompleteInput:
+      allOf:
+        - $ref: "#/components/schemas/UploadSignInput"
+        - type: object
+          required: [storagePath]
+          properties:
+            storagePath:
+              type: string
+              maxLength: 300
+
+    StorageBannerUpload:
+      type: object
+      required: [storagePath, name, contentType, size]
+      properties:
+        storagePath:
+          type: string
+          maxLength: 300
+        name:
+          type: string
+          maxLength: 255
+        contentType:
+          type: string
+          enum: [image/avif, image/gif, image/jpeg, image/png, image/webp]
+        size:
+          type: integer
+          minimum: 1
+          maximum: 5242880
+
+    StorageBannersInput:
+      type: object
+      required: [uploads]
+      properties:
+        uploads:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/StorageBannerUpload"
+
+    ProductStats:
+      type: object
+      required: [total, byCategory]
+      properties:
+        total:
+          type: integer
+        byCategory:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryCount"
+
+    CategoryCount:
+      type: object
+      required: [category, count]
+      properties:
+        category:
+          type: string
+        count:
+          type: integer
+
+    AnalyticsEventInput:
+      type: object
+      required: [eventType]
+      properties:
+        eventType:
+          type: string
+          enum: [add_to_cart, whatsapp_checkout]
+        productId:
+          type: integer
+          minimum: 1
+        source:
+          type: string
+          enum: [catalog, product_detail]
+        sizeName:
+          type: string
+          maxLength: 120
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 10000
+        itemCount:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        amountUsd:
+          type: number
+          minimum: 0
+          maximum: 100000000
+
+    AnalyticsOverview:
+      type: object
+      required: [range, traffic, commerce, topProducts, devices, referrers, sourceStatus, generatedAt]
+      properties:
+        range:
+          type: object
+          required: [from, to, timezone]
+          properties:
+            from: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
+            to: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
+            timezone: { type: string }
+        traffic:
+          $ref: "#/components/schemas/AnalyticsTraffic"
+        commerce:
+          $ref: "#/components/schemas/AnalyticsCommerce"
+        topProducts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalyticsProduct"
+        devices:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalyticsBreakdown"
+        referrers:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalyticsBreakdown"
+        sourceStatus:
+          type: object
+          properties:
+            vercel: { type: string, enum: [ok, unavailable, not_configured] }
+            commerce: { type: string, enum: [ok, unavailable] }
+          required: [vercel, commerce]
+        warnings:
+          type: array
+          items: { type: string }
+        generatedAt:
+          type: string
+          format: date-time
+
+    AnalyticsTraffic:
+      type: object
+      required: [visitors, pageviews, daily]
+      properties:
+        visitors: { type: integer, minimum: 0 }
+        pageviews: { type: integer, minimum: 0 }
+        daily:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalyticsDaily"
+
+    AnalyticsCommerce:
+      type: object
+      required: [addToCartClicks, unitsAdded, whatsappIntents, potentialValueUsd, daily]
+      properties:
+        addToCartClicks: { type: integer, minimum: 0 }
+        unitsAdded: { type: integer, minimum: 0 }
+        whatsappIntents: { type: integer, minimum: 0 }
+        potentialValueUsd: { type: number, minimum: 0 }
+        daily:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalyticsDaily"
+
+    AnalyticsDaily:
+      type: object
+      required: [date, pageviews, visitors, addToCartClicks, whatsappIntents]
+      properties:
+        date: { type: string, format: date }
+        pageviews: { type: integer, minimum: 0 }
+        visitors: { type: integer, minimum: 0 }
+        addToCartClicks: { type: integer, minimum: 0 }
+        whatsappIntents: { type: integer, minimum: 0 }
+
+    AnalyticsProduct:
+      type: object
+      required: [slug, name, views, addClicks]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        views: { type: integer, minimum: 0 }
+        addClicks: { type: integer, minimum: 0 }
+
+    AnalyticsBreakdown:
+      type: object
+      required: [label, value]
+      properties:
+        label: { type: string }
+        value: { type: integer, minimum: 0 }
+
+    ExchangeRate:
+      type: object
+      required: [id, usdToBs, updatedAt]
+      properties:
+        id:
+          type: integer
+        usdToBs:
+          type: number
+          description: How many Bs per 1 USD
+        updatedAt:
+          type: string
+          format: date-time
+
+    ExchangeRateInput:
+      type: object
+      required: [usdToBs]
+      properties:
+        usdToBs:
+          type: number
+          minimum: 0.0001
+          maximum: 100000000
+          description: How many Bs per 1 USD
+
+    AdminSession:
+      type: object
+      required: [authenticated, configured]
+      properties:
+        authenticated:
+          type: boolean
+        configured:
+          type: boolean
+        username:
+          type: string
+
+    AdminLoginInput:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 1

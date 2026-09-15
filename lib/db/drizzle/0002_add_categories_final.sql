@@ -1,0 +1,1 @@
+-- Schema snapshot finalized by 0002; data migration is handled by 0001_add_categories.sql.

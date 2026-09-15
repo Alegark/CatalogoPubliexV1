@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+.git
+**/.git
+.vercel
+**/dist
+**/uploads
+Excel_de_datos
+.env*
+**/.env*
+*.log

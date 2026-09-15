@@ -1,0 +1,2 @@
+CREATE INDEX "analytics_events_occurred_at_idx" ON "analytics_events" USING btree ("occurred_at");--> statement-breakpoint
+CREATE INDEX "analytics_events_type_occurred_at_idx" ON "analytics_events" USING btree ("event_type","occurred_at");

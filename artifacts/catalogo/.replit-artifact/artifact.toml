@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Catálogo Plasticos Maracaibo"
+version = "1.0.0"
+id = "artifacts/catalogo"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23421
+
+[services.development]
+run = "pnpm --filter @workspace/catalogo run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/catalogo", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/catalogo/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23421"
+BASE_PATH = "/"
